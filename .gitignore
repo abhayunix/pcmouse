@@ -12,6 +12,12 @@
 .swiftpm/
 migrate_working_dir/
 
+# Executables & installer outputs (Exceeds GitHub 100MB limit)
+*.exe
+*.pdb
+windows-agent/dist/
+windows-agent/installer_output/
+
 # IntelliJ / Android Studio related
 *.iml
 *.ipr

@@ -26,12 +26,13 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
   double _uploadProgress = 0.0;
   String _transferStatus = '';
 
-  // Theme Colors
-  final Color bgColor = const Color(0xFF121212);
-  final Color surfaceColor = const Color(0xFF1E1E1E);
-  final Color accentColor = const Color(0xFF4A90E2);
-  final Color folderColor = const Color(0xFF63A4FF);
-  final Color fileColor = const Color(0xFF9E9E9E);
+  // Theme Constants matching pcmouse brand
+  static const backgroundColor = Color(0xFF0D1117);
+  static const surfaceColor = Color(0xFF161B22);
+  static const cardColor = Color(0xFF21262D);
+  static const accentColor = Color(0xFF00E5FF);
+  static const folderColor = Color(0xFFFFB74D);
+  static const fileColor = Color(0xFF80D8FF);
 
   @override
   void initState() {
@@ -84,7 +85,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     setState(() {
       _isTransferring = true;
       _uploadProgress = 0.0;
-      _transferStatus = 'Preparing file...';
+      _transferStatus = 'Computing SHA-256 hash...';
     });
 
     final bytes = await file.readAsBytes();
@@ -92,7 +93,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     String checksum = digest.toString().toUpperCase();
 
     setState(() {
-      _transferStatus = 'Connecting to PC...';
+      _transferStatus = 'Starting transfer to PC...';
     });
 
     final startCompleter = Completer<String>();
@@ -130,7 +131,9 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     if (transferId.isEmpty) {
       if (mounted) {
         setState(() => _isTransferring = false);
-        _showSnackBar('Upload rejected by PC', isError: true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File upload start rejected by PC.'), backgroundColor: Colors.red),
+        );
       }
       return;
     }
@@ -157,7 +160,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
       if (mounted) {
         setState(() {
           _uploadProgress = (i + 1) / totalChunks;
-          _transferStatus = 'Uploading $fileName...';
+          _transferStatus = 'Uploading... ${(_uploadProgress * 100).toInt()}%';
         });
       }
 
@@ -172,22 +175,15 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
     if (mounted) {
       setState(() {
         _isTransferring = false;
+        _transferStatus = 'File transfer complete!';
       });
-      _showSnackBar('Uploaded $fileName successfully');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Uploaded $fileName successfully!'), backgroundColor: Colors.green),
+      );
+
       _loadDirectory(_currentPath);
     }
-  }
-
-  void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF333333),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override
@@ -198,52 +194,93 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    String displayTitle = _currentPath.isEmpty
-        ? 'My PC'
-        : _currentPath.split(RegExp(r'[/\\]')).last;
+    String folderTitle = _currentPath.isEmpty
+        ? 'PC Drives'
+        : _currentPath.split(RegExp(r'[/\\]')).where((s) => s.isNotEmpty).last;
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) {
         if (didPop) return;
-        if (!_navigateBack()) {
+        bool handledLocally = _navigateBack();
+        if (!handledLocally) {
           Navigator.of(context).pop();
         }
       },
       child: Scaffold(
-        backgroundColor: bgColor,
+        backgroundColor: backgroundColor,
         appBar: AppBar(
-          backgroundColor: bgColor,
+          backgroundColor: surfaceColor,
           elevation: 0,
-          scrolledUnderElevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
             onPressed: () {
-              if (!_navigateBack()) Navigator.of(context).pop();
+              bool handledLocally = _navigateBack();
+              if (!handledLocally) {
+                Navigator.of(context).pop();
+              }
             },
           ),
-          title: Text(
-            displayTitle,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              letterSpacing: 0.3,
-            ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                folderTitle,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              if (_currentPath.isNotEmpty)
+                Text(
+                  _currentPath,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
           ),
-          centerTitle: true,
           actions: [
             IconButton(
-              icon: Icon(Icons.cloud_upload_outlined, color: accentColor),
-              tooltip: 'Upload File',
+              icon: const Icon(Icons.upload_file_rounded, color: accentColor),
+              tooltip: 'Upload File to PC',
               onPressed: _isTransferring ? null : _pickAndUploadFile,
             ),
-            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+              onPressed: () => _loadDirectory(_currentPath),
+            ),
           ],
         ),
         body: Column(
           children: [
-            // Upload Progress Banner
+            // Breadcrumb Bar
+            if (_currentPath.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                color: cardColor,
+                child: Row(
+                  children: [
+                    const Icon(Icons.folder_copy_rounded, color: folderColor, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _currentPath,
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Animated Upload Card
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               height: _isTransferring ? 80 : 0,
@@ -256,7 +293,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                   decoration: BoxDecoration(
                     color: surfaceColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: accentColor.withOpacity(0.3)),
+                    border: Border.all(color: accentColor.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +307,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                           ),
                           Text(
                             '${(_uploadProgress * 100).toInt()}%',
-                            style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 13),
                           ),
                         ],
                       ),
@@ -280,7 +317,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
                         child: LinearProgressIndicator(
                           value: _uploadProgress,
                           backgroundColor: Colors.white10,
-                          valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                          valueColor: const AlwaysStoppedAnimation<Color>(accentColor),
                           minHeight: 6,
                         ),
                       ),
@@ -294,34 +331,34 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
-                ),
-              )
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+                      ),
+                    )
                   : _fileItems.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                itemCount: _fileItems.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 4),
-                itemBuilder: (context, index) {
-                  final item = _fileItems[index] as Map<String, dynamic>;
-                  final name = (item['name'] ?? item['Name'] ?? 'Unknown') as String;
-                  final path = (item['path'] ?? item['Path'] ?? '') as String;
-                  final isDir = (item['isDirectory'] ?? item['IsDirectory'] ?? false) as bool;
-                  final sizeBytes = (item['sizeBytes'] ?? item['SizeBytes'] ?? 0) as int;
+                      ? _buildEmptyState()
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          itemCount: _fileItems.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 4),
+                          itemBuilder: (context, index) {
+                            final item = _fileItems[index] as Map<String, dynamic>;
+                            final name = (item['name'] ?? item['Name'] ?? 'Unknown') as String;
+                            final path = (item['path'] ?? item['Path'] ?? '') as String;
+                            final isDir = (item['isDirectory'] ?? item['IsDirectory'] ?? false) as bool;
+                            final sizeBytes = (item['sizeBytes'] ?? item['SizeBytes'] ?? 0) as int;
 
-                  return _buildFileItem(
-                    name: name,
-                    isDir: isDir,
-                    sizeBytes: sizeBytes,
-                    onTap: () {
-                      if (isDir) _loadDirectory(path, pushToStack: true);
-                    },
-                  );
-                },
-              ),
+                            return _buildFileItem(
+                              name: name,
+                              isDir: isDir,
+                              sizeBytes: sizeBytes,
+                              onTap: () {
+                                if (isDir) _loadDirectory(path, pushToStack: true);
+                              },
+                            );
+                          },
+                        ),
             ),
           ],
         ),
@@ -350,7 +387,7 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: isDir ? folderColor.withOpacity(0.15) : fileColor.withOpacity(0.1),
+            color: isDir ? folderColor.withValues(alpha: 0.15) : fileColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
@@ -381,15 +418,15 @@ class _FileManagerScreenState extends State<FileManagerScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.folder_open_rounded, size: 64, color: Colors.white24),
-          const SizedBox(height: 16),
-          const Text(
-            'Folder is empty',
-            style: TextStyle(color: Colors.white54, fontSize: 16),
+          SizedBox(height: 16),
+          Text(
+            'This folder is empty',
+            style: TextStyle(color: Colors.white38, fontSize: 14),
           ),
         ],
       ),
