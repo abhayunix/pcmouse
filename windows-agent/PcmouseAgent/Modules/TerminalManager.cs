@@ -7,7 +7,7 @@ namespace PcmouseAgent.Modules
     public class TerminalManager
     {
         /// <summary>
-        /// Execute PowerShell or CMD command on Windows PC and return stdout/stderr
+        /// Execute PowerShell or CMD command asynchronously on Windows PC without stream deadlocks
         /// </summary>
         public string ExecuteCommand(string command, string shell = "powershell")
         {
@@ -22,44 +22,67 @@ namespace PcmouseAgent.Modules
                 if (shell.Equals("cmd", StringComparison.OrdinalIgnoreCase))
                 {
                     psi.FileName = "cmd.exe";
-                    psi.Arguments = $"/c {command}";
+                    psi.Arguments = $"/c \"{command}\"";
                 }
                 else
                 {
                     psi.FileName = "powershell.exe";
-                    psi.Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{command}\"";
+                    psi.Arguments = $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{command.Replace("\"", "\\\"")}\"";
                 }
 
                 psi.RedirectStandardOutput = true;
                 psi.RedirectStandardError = true;
+                psi.StandardOutputEncoding = Encoding.UTF8;
+                psi.StandardErrorEncoding = Encoding.UTF8;
                 psi.UseShellExecute = false;
                 psi.CreateNoWindow = true;
 
+                StringBuilder stdoutBuilder = new StringBuilder();
+                StringBuilder stderrBuilder = new StringBuilder();
+
                 using Process proc = new Process { StartInfo = psi };
-                StringBuilder output = new StringBuilder();
+
+                proc.OutputDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        stdoutBuilder.AppendLine(e.Data);
+                    }
+                };
+
+                proc.ErrorDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        stderrBuilder.AppendLine(e.Data);
+                    }
+                };
 
                 proc.Start();
-                string stdout = proc.StandardOutput.ReadToEnd();
-                string stderr = proc.StandardError.ReadToEnd();
-                bool exited = proc.WaitForExit(10000); // 10s execution timeout
+                proc.BeginOutputReadLine();
+                proc.BeginErrorReadLine();
+
+                bool exited = proc.WaitForExit(10000); // 10 second timeout
 
                 if (!exited)
                 {
-                    try { proc.Kill(); } catch { }
-                    return "[ERROR]: Command execution timed out (10s limit).";
+                    try { proc.Kill(true); } catch { }
+                    return "[TIMEOUT ERROR]: Command execution timed out (10s limit).";
                 }
 
-                if (!string.IsNullOrEmpty(stdout))
+                StringBuilder finalResult = new StringBuilder();
+                if (stdoutBuilder.Length > 0)
                 {
-                    output.AppendLine(stdout);
+                    finalResult.AppendLine(stdoutBuilder.ToString().TrimEnd());
                 }
 
-                if (!string.IsNullOrEmpty(stderr))
+                if (stderrBuilder.Length > 0)
                 {
-                    output.AppendLine($"[ERROR OUTPUT]:\n{stderr}");
+                    if (finalResult.Length > 0) finalResult.AppendLine("\n--- STDERR ---");
+                    finalResult.AppendLine(stderrBuilder.ToString().TrimEnd());
                 }
 
-                return output.Length > 0 ? output.ToString().TrimEnd() : "Command executed successfully (no output).";
+                return finalResult.Length > 0 ? finalResult.ToString() : "Command executed successfully (no output).";
             }
             catch (Exception ex)
             {

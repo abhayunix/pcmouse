@@ -107,16 +107,19 @@ class _TerminalScreenState extends State<TerminalScreen> {
           children: [
             const Icon(Icons.terminal_rounded, color: accentColor, size: 22),
             const SizedBox(width: 8),
-            Text(
-              _selectedShell == 'powershell' ? 'PowerShell Terminal' : 'CMD Command Prompt',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+            Expanded(
+              child: Text(
+                _selectedShell == 'powershell' ? 'PowerShell Terminal' : 'CMD Command Prompt',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
         actions: [
           // Shell Switcher Toggle
           Container(
-            margin: const EdgeInsets.only(right: 12),
+            margin: const EdgeInsets.only(right: 8),
             child: SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'powershell', label: Text('PS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
