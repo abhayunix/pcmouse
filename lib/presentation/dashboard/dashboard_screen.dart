@@ -18,7 +18,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final LocalNetworkRepository _networkRepository = LocalNetworkRepository();
-  final ConnectionMode _currentMode = ConnectionMode.localWifi;
   bool _isConnected = false;
   String _pcName = "WORKSTATION-WIN11";
   String _connectedIp = "192.168.1.100";
@@ -183,10 +182,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Remote PC Controller'),
+        title: Row(
+          children: [
+            Image.asset('assets/images/logo.png', height: 32, errorBuilder: (_, __, ___) => const Icon(Icons.mouse, color: Color(0xFF00E5FF))),
+            const SizedBox(width: 10),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('pc', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF00E5FF), fontSize: 18)),
+                    Text('mouse', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00B0FF), fontSize: 18)),
+                  ],
+                ),
+                Text('PRECISE. CONNECTED.', style: TextStyle(color: Color(0xFF00E5FF), fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              ],
+            ),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
+            icon: const Icon(Icons.qr_code_scanner, color: Color(0xFF00E5FF)),
             tooltip: 'Pair New PC',
             onPressed: _openQrScanner,
           ),
@@ -258,7 +274,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
-                _buildModeChip(_currentMode),
               ],
             ),
           ],
@@ -267,57 +282,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildModeChip(ConnectionMode mode) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.cyanAccent.withAlpha(40),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.cyanAccent),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.wifi, size: 14, color: Colors.cyanAccent),
-          SizedBox(width: 6),
-          Text('Local Wi-Fi', style: TextStyle(color: Colors.cyanAccent, fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildMetricsOverview() {
     return Row(
       children: [
-        Expanded(child: _buildMetricCard('CPU', '${_cpuUsage.toStringAsFixed(1)}%', _cpuUsage / 100, Colors.cyanAccent)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildMetricCard('RAM', '${_ramUsage.toStringAsFixed(1)}%', _ramUsage / 100, Colors.purpleAccent)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildMetricCard('DISK', '${_diskUsage.toStringAsFixed(1)}%', _diskUsage / 100, Colors.amberAccent)),
+        Expanded(child: _buildMetricMiniCard('CPU', '${_cpuUsage.toStringAsFixed(1)}%', _cpuUsage / 100, Colors.cyanAccent)),
+        const SizedBox(width: 10),
+        Expanded(child: _buildMetricMiniCard('RAM', '${_ramUsage.toStringAsFixed(1)}%', _ramUsage / 100, Colors.purpleAccent)),
+        const SizedBox(width: 10),
+        Expanded(child: _buildMetricMiniCard('Disk', '${_diskUsage.toStringAsFixed(1)}%', _diskUsage / 100, Colors.orangeAccent)),
       ],
     );
   }
 
-  Widget _buildMetricCard(String title, String value, double progress, Color color) {
+  Widget _buildMetricMiniCard(String title, String value, double percent, Color color) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(
-              _isConnected ? value : '--',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
+            Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             LinearProgressIndicator(
-              value: _isConnected ? progress.clamp(0.0, 1.0) : 0.0,
+              value: percent.clamp(0.0, 1.0),
               backgroundColor: Colors.white12,
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: 4,
-              borderRadius: BorderRadius.circular(2),
             ),
           ],
         ),
@@ -326,42 +318,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildControlGrid() {
-    final List<Map<String, dynamic>> items = [
-      {'title': 'Touchpad & Keyboard', 'icon': Icons.touch_app, 'color': const Color(0xFF00E5FF)},
-      {'title': 'File Manager', 'icon': Icons.folder_open, 'color': Colors.amberAccent},
-      {'title': 'System Monitor', 'icon': Icons.analytics, 'color': Colors.tealAccent},
+    final controls = [
+      {'title': 'Touchpad & Gestures', 'icon': Icons.touch_app, 'color': Colors.cyanAccent},
+      {'title': 'System Monitor', 'icon': Icons.analytics, 'color': Colors.purpleAccent},
+      {'title': 'File Manager', 'icon': Icons.folder_special, 'color': Colors.amberAccent},
       {'title': 'Power Controls', 'icon': Icons.power_settings_new, 'color': Colors.redAccent},
     ];
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: items.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.15,
+        childAspectRatio: 1.3,
       ),
+      itemCount: controls.length,
       itemBuilder: (context, index) {
-        final item = items[index];
+        final item = controls[index];
+        final title = item['title'] as String;
+        final icon = item['icon'] as IconData;
+        final color = item['color'] as Color;
+
         return Card(
+          elevation: 2,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => _handleGridTap(item['title']),
+            onTap: () => _handleGridTap(title),
+            borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(item['icon'], size: 30, color: item['color']),
+                  Icon(icon, size: 36, color: color),
                   const SizedBox(height: 8),
                   Text(
-                    item['title'],
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                    title,
                     textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),

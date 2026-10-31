@@ -53,3 +53,4 @@ flutter:
 
   assets:
     - shared-protocol/packets/protocol_spec.json
+    - assets/images/logo.png

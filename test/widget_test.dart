@@ -4,6 +4,6 @@ import 'package:pcmouse/main.dart';
 void main() {
   testWidgets('Dashboard loads cleanly smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(const RemotePcApp());
-    expect(find.text('Remote PC Controller'), findsOneWidget);
+    expect(find.text('mouse'), findsOneWidget);
   });
 }
