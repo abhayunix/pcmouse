@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RemotePCProtocolFrame",
+  "description": "Standardized packet envelope for all communication channels (Bluetooth, WebSocket/TLS, WebRTC DataChannel)",
+  "type": "object",
+  "required": ["version", "msgId", "type", "timestamp", "payload"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "default": 1
+    },
+    "msgId": {
+      "type": "string",
+      "description": "UUID v4 for tracing and message acknowledgment"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "HANDSHAKE_REQ",
+        "HANDSHAKE_RESP",
+        "AUTH_REQ",
+        "AUTH_RESP",
+        "MOUSE_EVENT",
+        "KEYBOARD_EVENT",
+        "SYSTEM_COMMAND",
+        "VOLUME_COMMAND",
+        "FILE_TRANSFER_START",
+        "FILE_TRANSFER_CHUNK",
+        "FILE_TRANSFER_COMPLETE",
+        "FILE_TRANSFER_CANCEL",
+        "SYSTEM_METRICS_REQ",
+        "SYSTEM_METRICS_RESP",
+        "PROCESS_LIST_REQ",
+        "PROCESS_LIST_RESP",
+        "PROCESS_CONTROL_CMD",
+        "ERROR_RESP"
+      ]
+    },
+    "timestamp": {
+      "type": "integer",
+      "description": "Epoch timestamp in milliseconds"
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}
