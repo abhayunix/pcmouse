@@ -37,6 +37,7 @@ namespace PcmouseAgent.Modules
         public ProcessManager Processes { get; } = new ProcessManager();
         public FileManager Files { get; } = new FileManager();
         public ClipboardManager Clipboard { get; } = new ClipboardManager();
+        public TerminalManager Terminal { get; } = new TerminalManager();
         public PairingManager Pairing { get; } = new PairingManager();
         public SecurityManager Security { get; } = new SecurityManager();
 
@@ -130,7 +131,25 @@ namespace PcmouseAgent.Modules
                     return null;
                 }
 
-                // 6. System Metrics Request
+                // 6. Terminal PowerShell & CMD Commands
+                if (type.Equals("TERMINAL_CMD_REQ", StringComparison.OrdinalIgnoreCase))
+                {
+                    string cmd = payload["command"]?.ToString() ?? string.Empty;
+                    string shell = payload["shell"]?.ToString() ?? "powershell";
+                    string result = Terminal.ExecuteCommand(cmd, shell);
+                    Security.LogAudit($"Executed {shell.ToUpper()} command remotely: {cmd}");
+
+                    return JsonConvert.SerializeObject(new
+                    {
+                        version = 1,
+                        msgId,
+                        type = "TERMINAL_CMD_RESP",
+                        timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        payload = new { command = cmd, shell, result }
+                    }, CamelCaseSettings);
+                }
+
+                // 7. System Metrics Request
                 if (type.Equals("SYSTEM_METRICS_REQ", StringComparison.OrdinalIgnoreCase))
                 {
                     var metrics = Monitor.GetMetrics();
@@ -144,7 +163,7 @@ namespace PcmouseAgent.Modules
                     }, CamelCaseSettings);
                 }
 
-                // 7. Process List Request
+                // 8. Process List Request
                 if (type.Equals("PROCESS_LIST_REQ", StringComparison.OrdinalIgnoreCase))
                 {
                     var procs = Processes.GetRunningProcesses(onlyWithWindow: true);
@@ -158,7 +177,7 @@ namespace PcmouseAgent.Modules
                     }, CamelCaseSettings);
                 }
 
-                // 8. File System Enumeration
+                // 9. File System Enumeration
                 if (type.Equals("FILE_LIST_REQ", StringComparison.OrdinalIgnoreCase))
                 {
                     string path = payload["path"]?.ToString() ?? string.Empty;
@@ -173,7 +192,7 @@ namespace PcmouseAgent.Modules
                     }, CamelCaseSettings);
                 }
 
-                // 9. File Upload Start
+                // 10. File Upload Start
                 if (type.Equals("FILE_TRANSFER_START", StringComparison.OrdinalIgnoreCase))
                 {
                     string name = payload["fileName"]?.ToString() ?? "file.dat";
@@ -192,7 +211,7 @@ namespace PcmouseAgent.Modules
                     }, CamelCaseSettings);
                 }
 
-                // 10. File Chunk
+                // 11. File Chunk
                 if (type.Equals("FILE_TRANSFER_CHUNK", StringComparison.OrdinalIgnoreCase))
                 {
                     string id = payload["transferId"]?.ToString() ?? string.Empty;
@@ -209,7 +228,7 @@ namespace PcmouseAgent.Modules
                     }, CamelCaseSettings);
                 }
 
-                // 11. File Complete
+                // 12. File Complete
                 if (type.Equals("FILE_TRANSFER_COMPLETE", StringComparison.OrdinalIgnoreCase))
                 {
                     string id = payload["transferId"]?.ToString() ?? string.Empty;
@@ -225,7 +244,7 @@ namespace PcmouseAgent.Modules
                     }, CamelCaseSettings);
                 }
 
-                // 12. Cross-Device Shared Clipboard Sync
+                // 13. Cross-Device Shared Clipboard Sync
                 if (type.Equals("CLIPBOARD_SET_REQ", StringComparison.OrdinalIgnoreCase))
                 {
                     string text = payload["text"]?.ToString() ?? string.Empty;

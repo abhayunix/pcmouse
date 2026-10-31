@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../data/repositories/local_network_repository.dart';
 import '../touchpad/touchpad_screen.dart';
+import '../keyboard/remote_keyboard_screen.dart';
+import '../terminal/terminal_screen.dart';
 import '../system_monitor/system_monitor_screen.dart';
 import '../file_manager/file_manager_screen.dart';
 import '../power_control/power_control_dialog.dart';
@@ -159,6 +161,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => TouchpadScreen(networkRepository: _networkRepository)),
+      );
+    } else if (title.contains('Keyboard')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => RemoteKeyboardScreen(networkRepository: _networkRepository)),
+      );
+    } else if (title.contains('Terminal')) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => TerminalScreen(networkRepository: _networkRepository)),
       );
     } else if (title == 'System Monitor') {
       Navigator.push(
@@ -320,6 +332,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildControlGrid() {
     final controls = [
       {'title': 'Touchpad & Gestures', 'icon': Icons.touch_app, 'color': Colors.cyanAccent},
+      {'title': 'Remote Keyboard & Text', 'icon': Icons.keyboard, 'color': Colors.lightGreenAccent},
+      {'title': 'PowerShell & CMD Terminal', 'icon': Icons.terminal, 'color': Colors.tealAccent},
       {'title': 'System Monitor', 'icon': Icons.analytics, 'color': Colors.purpleAccent},
       {'title': 'File Manager', 'icon': Icons.folder_special, 'color': Colors.amberAccent},
       {'title': 'Power Controls', 'icon': Icons.power_settings_new, 'color': Colors.redAccent},
@@ -351,12 +365,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 36, color: color),
+                  Icon(icon, size: 34, color: color),
                   const SizedBox(height: 8),
                   Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ],
               ),
